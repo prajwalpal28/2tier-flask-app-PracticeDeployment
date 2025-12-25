@@ -1,0 +1,39 @@
+# Use a lightweight Python base image
+FROM python:3.9-slim
+
+# Set working directory inside container
+WORKDIR /app
+
+# Update the package index so apt knows the latest versions
+RUN apt-get update -y && \
+    \
+    # Install system-level dependencies required to build mysqlclient
+    # gcc  → C compiler needed for compiling Python C extensions
+    # default-libmysqlclient-dev → MySQL client headers & libraries
+    # pkg-config → Helps locate MySQL libraries during build
+    apt-get install -y \
+        gcc \
+        default-libmysqlclient-dev \
+        pkg-config && \
+    \
+    # Remove cached package lists to reduce Docker image size
+    rm -rf /var/lib/apt/lists/*
+
+# Copy requirements file first (for Docker layer caching)
+COPY requirements.txt .
+
+# Upgrade pip to latest version
+RUN pip install --upgrade pip
+
+# Install Python dependencies
+RUN pip install -r requirements.txt
+
+# Copy application source code into container
+COPY . .
+
+# Expose application port (optional but recommended)
+EXPOSE 5000
+
+# Command to run the application
+CMD [ "python", "app.py" ]
+
